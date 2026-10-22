@@ -360,13 +360,13 @@ radius beyond profile management: they redirect the fund flow or the trust
 anchor of the whole protocol, instantly and with no operational guard.
 
 - `set_escrow_contract` (`contracts/invoice/src/lib.rs:401`) overwrites the
-  stored `DataKey::EscrowContract` (`contracts/invoice/src/lib.rs:433`).
+  stored `DataKey::EscrowContract` (`contracts/invoice/src/lib.rs:436`).
   Repayments send buyer funds directly to that stored address:
   `repay_partial` executes `token.try_transfer(&invoice.buyer, &escrow, ...)`
-  (`contracts/invoice/src/lib.rs:1618`), `repay` delegates to it with the
-  full remaining balance (`contracts/invoice/src/lib.rs:1739`), and
+  (`contracts/invoice/src/lib.rs:1628`), `repay` delegates to it with the
+  full remaining balance (`contracts/invoice/src/lib.rs:1753`), and
   `repay_early` mirrors the same pattern
-  (`contracts/invoice/src/lib.rs:1836`). Repointing the pointer therefore
+  (`contracts/invoice/src/lib.rs:1850`). Repointing the pointer therefore
   redirects every future buyer repayment to any address the attacker
   picks — funds never reach the real escrow, so the "cannot release
   escrowed funds to themselves" limitation in the blast-radius table does
@@ -375,9 +375,9 @@ anchor of the whole protocol, instantly and with no operational guard.
   overwrites the stored `DataKey::AgentRegistryContract`
   (`contracts/invoice/src/lib.rs:344`). `submit_attestation` resolves its
   signer trust anchor from that stored address
-  (`contracts/invoice/src/lib.rs:1285-1288`) and accepts any attestation
+  (`contracts/invoice/src/lib.rs:1289-1293`) and accepts any attestation
   whose recovered pubkey matches an agent the *stored* registry reports as
-  active (`contracts/invoice/src/lib.rs:1293-1296`). Swapping the pointer
+  active (`contracts/invoice/src/lib.rs:1296-1300`). Swapping the pointer
   lets the attacker install their own registry, register their own agent
   keys, and produce attestations the contract treats as legitimate.
 
@@ -386,9 +386,9 @@ anchor of the whole protocol, instantly and with no operational guard.
 (`require_not_paused`, `contracts/pause/src/lib.rs:83`), reject candidates
 that alias the admin, the invoice contract itself, the identity registry, or
 the other already-wired pointer (`assert_valid_wiring_address`,
-`contracts/invoice/src/lib.rs:2859-2877`), and emit a change event
-(`events::agent_registry_contract_updated`, `contracts/invoice/src/events.rs:190`;
-`events::escrow_contract_updated`, `contracts/invoice/src/events.rs:226`).
+`contracts/invoice/src/lib.rs:2873-2891`), and emit a change event
+(`events::agent_registry_contract_updated`, `contracts/invoice/src/events.rs:196`;
+`events::escrow_contract_updated`, `contracts/invoice/src/events.rs:237`).
 That alias check only blocks swapping in an *already-wired* address; any
 fresh attacker-controlled address is accepted immediately. There is no
 timelock, no two-step commit, and no lock-after-wiring — the only trace is
