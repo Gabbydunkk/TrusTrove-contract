@@ -8412,12 +8412,12 @@ fn test_batch_fund_invoice_discount_below_floor_rejected() {
 #[test]
 fn test_set_min_discount_emits_event_with_old_and_new_values() {
     let te = setup();
-    let before = te.env.events().all().len();
 
     te.pool.set_min_discount(&750);
 
     let events = te.env.events().all();
-    assert_eq!(events.len(), before + 1);
+    // sdk >=22: this buffer holds only the set_min_discount call's event.
+    assert_eq!(events.len(), 1);
     let (contract, topics, data) = events.get(events.len() - 1).unwrap();
     assert_eq!(contract, te.pool_id);
     assert_eq!(topics.len(), 1);
@@ -8443,9 +8443,9 @@ fn test_set_min_discount_emits_event_with_old_and_new_values() {
 
     // A rejected change (above MAX_MIN_DISCOUNT_BPS) must not emit anything,
     // and must leave the stored floor at 1500.
-    let before_rejected = events.len();
     assert!(te.pool.try_set_min_discount(&5001).is_err());
-    assert_eq!(te.env.events().all().len(), before_rejected);
+    // A rejected change emits nothing in its own per-invocation buffer.
+    assert_eq!(te.env.events().all().len(), 0);
     assert_eq!(te.pool.get_min_discount_bps(), 1500);
 }
 
