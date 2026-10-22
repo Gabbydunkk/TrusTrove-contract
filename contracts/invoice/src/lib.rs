@@ -428,16 +428,14 @@ impl InvoiceContract {
         );
 
         let old_escrow: Option<Address> = env.storage().instance().get(&DataKey::EscrowContract);
+        // Event topics cannot represent an absent address. For the first
+        // assignment, publish the configured address in both address slots.
+        let event_old_escrow = old_escrow.as_ref().unwrap_or(&escrow_contract);
         env.storage()
             .instance()
             .set(&DataKey::EscrowContract, &escrow_contract);
         Self::extend_instance_ttl(&env);
-
-        if let Some(old) = old_escrow {
-            events::escrow_contract_updated(&env, &old, &escrow_contract);
-        } else {
-            events::escrow_contract_updated(&env, &escrow_contract, &escrow_contract);
-        }
+        events::escrow_contract_updated(&env, event_old_escrow, &escrow_contract);
     }
 
     /// Returns the stored escrow contract address, or `None` if not configured.
@@ -603,6 +601,7 @@ impl InvoiceContract {
     }
 
     /// Checks whether an asset is currently on the funding allow-list.
+    /// Successful reads renew the asset entry's TTL using the shared policy.
     ///
     /// # Arguments
     /// * `env` - The Soroban environment.
@@ -622,9 +621,14 @@ impl InvoiceContract {
     /// let supported = client.is_supported_asset(&usdc);
     /// ```
     pub fn is_supported_asset(env: Env, asset: Address) -> bool {
-        env.storage()
-            .persistent()
-            .has(&DataKey::SupportedAsset(asset))
+        let key = DataKey::SupportedAsset(asset);
+        let store = env.storage().persistent();
+        if store.has(&key) {
+            store.extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
+            true
+        } else {
+            false
+        }
     }
 
     /// Returns the number of assets currently on the funding allow-list.
